@@ -1,0 +1,7 @@
+{
+  "name": " Ops buddy",
+  "description": "A comprehensive AI-powered property data aggregator for Treebo operations, consolidating information from OTAs and Google into a structured report using Gemini Search Grounding.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
