@@ -85,18 +85,25 @@ const App: React.FC = () => {
     const wsBasic = XLSX.utils.aoa_to_sheet(basicInfo);
     XLSX.utils.book_append_sheet(wb, wsBasic, "Summary & Ratings");
 
-    // Sheet 2: Revenue & ARR
-    const revenueHeaders = [["Month", "ARR (INR)", "Occupancy (%)"]];
-    const revenueData = (report.revenue_insights || []).map(item => [
-      item.month,
-      item.arr,
-      item.occupancy
-    ]);
+    // Sheet 2: Revenue & ARR with MoM Growth
+    const revenueHeaders = [["Month", "ARR (INR)", "Occupancy (%)", "MoM Occupancy Growth (%)"]];
+    const revenueData = (report.revenue_insights || []).map((item, i) => {
+      const prev = i > 0 ? report.revenue_insights![i - 1] : null;
+      const growth = (prev && prev.occupancy > 0)
+        ? (((item.occupancy - prev.occupancy) / prev.occupancy) * 100).toFixed(2) + '%'
+        : "N/A (Baseline)";
+      return [
+        item.month,
+        item.arr,
+        item.occupancy,
+        growth
+      ];
+    });
     const wsRevenue = XLSX.utils.aoa_to_sheet([...revenueHeaders, ...revenueData]);
     XLSX.utils.book_append_sheet(wb, wsRevenue, "Revenue Intelligence");
 
     // Sheet 3: Inventory
-    const inventoryHeaders = [["Category Name", "Size (Sqft)", "View", "Flooring", "Connected", "Amenities", "Cancellation Policy"]];
+    const inventoryHeaders = [["OTA Room Type", "Size (Sqft)", "View", "Flooring", "Connected", "Amenities", "Cancellation Policy"]];
     const inventoryData = (report.room_details?.categories || []).map(cat => [
       cat.name,
       cat.size_sqft || "N/A",
@@ -109,19 +116,16 @@ const App: React.FC = () => {
     const wsInventory = XLSX.utils.aoa_to_sheet([...inventoryHeaders, ...inventoryData]);
     XLSX.utils.book_append_sheet(wb, wsInventory, "Inventory Matrix");
 
-    // Sheet 4: Operational Details
+    // Sheet 4: Operational Details & Negative Points
     const opsData = [
       ["CATEGORY", "PARAMETER", "STATUS / VALUE"],
       ["Amenities", "Infinity Pool", report.amenities.infinity_pool ? "Yes" : "No"],
       ["Amenities", "Gym Available", report.amenities.gym.available ? "Yes" : "No"],
       ["Amenities", "EV Charging", report.amenities.ev_charging.available ? "Yes" : "No"],
       ["Amenities", "Power Backup", report.amenities.power_backup.type || "N/A"],
-      ["Amenities", "WiFi", report.amenities.wifi_access],
       ["Safety", "24/7 Manned Security", report.safety_and_structure.security.manned_24x7 ? "Yes" : "No"],
-      ["Safety", "CCTV Entrance", report.safety_and_structure.cctv.entrance_cctv ? "Yes" : "No"],
-      ["Safety", "Doctor on Call", report.safety_and_structure.doctor_on_call ? "Yes" : "No"],
       ["Dining", "Pure Veg", report.dining.pure_veg ? "Yes" : "No"],
-      ["Dining", "Liquor Allowed", report.dining.liquor_allowed ? "Yes" : "No"]
+      ["Critique", "Negative Points Identified", (report.negative_points || []).join(" | ")]
     ];
     const wsOps = XLSX.utils.aoa_to_sheet(opsData);
     XLSX.utils.book_append_sheet(wb, wsOps, "Operational Specs");
@@ -349,34 +353,24 @@ const App: React.FC = () => {
                   <DataRow label="Opening Year" value={report.basic_info?.year_built} />
                 </InfoSection>
 
-                {/* Revenue Intelligence Section */}
-                <InfoSection title="Revenue Insights (Last 6 Months)" icon="fa-solid fa-chart-line">
-                  <div className="space-y-4">
-                    {report.revenue_insights && report.revenue_insights.length > 0 ? (
-                      <div className="overflow-hidden rounded-lg border border-slate-100">
-                        <table className="w-full text-left text-[11px]">
-                          <thead className="bg-slate-50 text-slate-400 font-black uppercase tracking-widest">
-                            <tr>
-                              <th className="px-3 py-2">Month</th>
-                              <th className="px-3 py-2 text-right">ARR</th>
-                              <th className="px-3 py-2 text-right">Occ %</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {report.revenue_insights.map((item, idx) => (
-                              <tr key={idx} className="hover:bg-orange-50/50 transition-colors">
-                                <td className="px-3 py-2 font-black text-slate-700">{item.month}</td>
-                                <td className="px-3 py-2 text-right text-slate-600 font-bold">₹{item.arr.toLocaleString()}</td>
-                                <td className="px-3 py-2 text-right text-slate-600 font-bold">{item.occupancy}%</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                {/* OTA Content Critique Section - NEW */}
+                <InfoSection title="OTA Content & Guest Critique" icon="fa-solid fa-triangle-exclamation">
+                  <div className="space-y-3">
+                    {report.negative_points && report.negative_points.length > 0 ? (
+                      report.negative_points.map((point, idx) => (
+                        <div key={idx} className="flex gap-3 p-3 bg-rose-50 border border-rose-100 rounded-xl group shadow-sm">
+                          <i className="fa-solid fa-circle-minus text-rose-400 mt-1 flex-shrink-0"></i>
+                          <p className="text-[11px] font-bold text-rose-900 leading-relaxed italic">{point}</p>
+                        </div>
+                      ))
                     ) : (
-                      <p className="text-[10px] text-slate-400 font-medium italic">Performance data unavailable for this asset.</p>
+                      <div className="text-center py-6 px-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                        <i className="fa-solid fa-circle-check text-emerald-500 text-xl mb-2"></i>
+                        <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-tight">No Critical Content Gaps Identified</p>
+                      </div>
                     )}
                   </div>
+                  <p className="mt-4 text-[9px] text-slate-400 italic font-medium">Based on customer feedback and description audits across OTAs.</p>
                 </InfoSection>
 
                 <InfoSection title="Market Sentiment" icon="fa-solid fa-star-half-stroke">
@@ -441,28 +435,6 @@ const App: React.FC = () => {
                     ) : null)}
                   </div>
                 </InfoSection>
-
-                <InfoSection title="Ground Truth Evidence" icon="fa-solid fa-shield-check">
-                  <div className="space-y-3">
-                    {sources.length > 0 ? sources.map((s, idx) => (
-                      <a 
-                        key={idx} 
-                        href={s.uri} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-orange-50 border border-transparent hover:border-orange-100 rounded-xl transition-all group shadow-sm"
-                      >
-                        <i className="fa-solid fa-fingerprint text-slate-300 mt-1 group-hover:text-[#C04D2E]"></i>
-                        <div className="min-w-0">
-                          <p className="text-[12px] font-black text-slate-700 truncate">{s.title}</p>
-                          <p className="text-[9px] text-slate-400 truncate font-mono mt-0.5">{s.uri}</p>
-                        </div>
-                      </a>
-                    )) : (
-                      <p className="text-center py-6 text-[10px] text-slate-400 font-black uppercase tracking-widest border border-dashed rounded-xl border-slate-200">Validation sources pending</p>
-                    )}
-                  </div>
-                </InfoSection>
               </div>
 
               {/* Main Report Body */}
@@ -497,29 +469,44 @@ const App: React.FC = () => {
                           <th className="px-6 py-4 text-left">Financial Month</th>
                           <th className="px-6 py-4 text-right">ARR (INR)</th>
                           <th className="px-6 py-4 text-right">Occupancy %</th>
+                          <th className="px-6 py-4 text-right">MoM Growth (%)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {(report.revenue_insights || []).map((rev, i) => (
-                          <tr key={i} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-black text-[#3d1a11]">{rev.month}</td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-600">₹{rev.arr.toLocaleString()}</td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="font-bold text-slate-600">{rev.occupancy}%</span>
-                                <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                  <div className="h-full bg-[#C04D2E]" style={{ width: `${rev.occupancy}%` }}></div>
+                        {(report.revenue_insights || []).map((rev, i) => {
+                          const prevRev = i > 0 ? report.revenue_insights![i - 1] : null;
+                          let growth = null;
+                          if (prevRev && prevRev.occupancy > 0) {
+                            growth = ((rev.occupancy - prevRev.occupancy) / prevRev.occupancy) * 100;
+                          }
+                          return (
+                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 font-black text-[#3d1a11]">{rev.month}</td>
+                              <td className="px-6 py-4 text-right font-bold text-slate-600">₹{rev.arr.toLocaleString()}</td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className="font-bold text-slate-600">{rev.occupancy}%</span>
+                                  <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-[#C04D2E]" style={{ width: `${rev.occupancy}%` }}></div>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                {growth !== null ? (
+                                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter shadow-sm border ${growth >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
+                                    <i className={`fa-solid fa-caret-${growth >= 0 ? 'up' : 'down'}`}></i>
+                                    {Math.abs(growth).toFixed(1)}% MoM
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest">Baseline</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                    </div>
-                   <p className="mt-4 text-[9px] text-slate-400 italic font-medium leading-relaxed">
-                     * Note: Performance metrics are estimated based on observed pricing history, platform-listed room inventory, and market demand trends gathered from OTA grounding.
-                   </p>
                 </InfoSection>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -555,7 +542,7 @@ const App: React.FC = () => {
                             onClick={() => requestSort('name')}
                           >
                             <div className="flex items-center gap-1.5">
-                              Inventory Class
+                              Public Room Type (OTA)
                               {sortConfig?.key === 'name' ? (
                                 <i className={`fa-solid fa-sort-${sortConfig.direction === 'asc' ? 'up' : 'down'} text-[8px]`}></i>
                               ) : (

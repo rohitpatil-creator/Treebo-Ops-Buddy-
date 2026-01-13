@@ -66,7 +66,7 @@ export interface HotelReport {
   };
   room_details: {
     categories: Array<{
-      name: 'Acacia' | 'Oak' | 'Maple' | 'Mahogany' | string;
+      name: string;
       size_sqft?: string;
       view_type?: string;
       flooring_type?: string;
@@ -118,6 +118,7 @@ export interface HotelReport {
     easemytrip_link?: string;
     yatra_link?: string;
   };
+  negative_points: string[];
 }
 
 export interface GroundingSource {

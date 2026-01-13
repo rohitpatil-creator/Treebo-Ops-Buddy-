@@ -58,7 +58,8 @@ const DEFAULT_REPORT: HotelReport = {
     approach_type: "N/A",
     parking_available: false
   },
-  external_links: {}
+  external_links: {},
+  negative_points: []
 };
 
 export const fetchHotelReport = async (hotelName: string, city: string): Promise<{ data: HotelReport; sources: GroundingSource[] }> => {
@@ -79,8 +80,17 @@ export const fetchHotelReport = async (hotelName: string, city: string): Promise
     SEARCH GROUNDING PROTOCOL:
     1. SCRAPE RATINGS: Provide specific score and review count for Google and EVERY major OTA.
     2. FIND LINKS: Extract direct URLs for MMT, Goibibo, Booking, Agoda, and Treebo.
-    3. CROSS-VERIFY AMENITIES: Confirm Power Backup type, 24/7 Security, Fire Safety measures, and Elevator type.
-    4. ROOM INVENTORY: Identify categories (Acacia, Oak, Maple, Mahogany) with precise sizes and view types.
+    3. CROSS-VERIFY AMENITIES: Confirm Power Backup type, 24/7 Security, Fire Safety measures, and Elevator type/access.
+    4. ACTUAL ROOM TYPES (CRITICAL): Identify the EXACT room names as displayed to customers on OTAs.
+    
+    OTA CONTENT CRITIQUE (NEGATIVE POINTS):
+    Scan reviews and content across ALL platforms. Identify recurring negative feedback, customer complaints, and content gaps. Examples:
+    - Recurring complaints about room cleanliness or bathroom odors.
+    - Negative mentions of breakfast quality or variety.
+    - Lack of parking mentioned in reviews but listed as available.
+    - Complaints about slow elevator or no lift access.
+    - Noisy surroundings or poor soundproofing.
+    - Inconsistent photos (rooms look different from photos).
     
     OUTPUT: Return ONLY a valid JSON object. No pre-amble.
 
@@ -106,7 +116,8 @@ export const fetchHotelReport = async (hotelName: string, city: string): Promise
       "dining": { "pure_veg": boolean, "homemade_food_request": boolean, "restaurant_location", "happy_hours": { "available": boolean, "timing", "discount" }, "liquor_allowed": boolean, "breakfast_type" },
       "safety_and_structure": { "elevator": { "available": boolean, "door_type", "access_type" }, "cctv": { "available": boolean, "backup_14_days": boolean, "entrance_cctv": boolean }, "fire_safety": { "extinguishers": boolean, "sprinklers_in_rooms": boolean, "sprinklers_in_common_areas": boolean, "safety_measures_in_rooms": boolean, "fire_exit_plan": boolean }, "security": { "manned_24x7": boolean, "lady_staff": boolean }, "doctor_on_call": boolean, "first_aid": boolean },
       "location_intelligence": { "business_hubs": [{"name", "distance"}], "tourist_spots": [{"name", "distance"}], "airport_transfer": { "available": boolean, "charges" }, "approach_type", "parking_available": boolean },
-      "external_links": { "treebo_link", "mmt_link", "goibibo_link", "google_listing", "image_gallery", "easemytrip_link", "yatra_link" }
+      "external_links": { "treebo_link", "mmt_link", "goibibo_link", "google_listing", "image_gallery", "easemytrip_link", "yatra_link" },
+      "negative_points": [string]
     }
   `;
 
